@@ -10,6 +10,7 @@
 - Laravel Framework version 5.3.16
 - PHPUnit 3.7.28
 - Laravel Doctrine 1.2
+- Sendmail Version 8.14.4
 
 Redis is assumed to be running in LRU mode.
 

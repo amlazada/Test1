@@ -238,4 +238,14 @@ return [
 
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Service Email
+    |--------------------------------------------------------------------------
+    |
+    | When creating a new post, send email to this email
+    |
+    */
+
+    'service_email' => 'amlazada@yandex.com',
 ];

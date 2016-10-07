@@ -102,6 +102,12 @@ class PostController extends Controller
 
         $this->em->persist($post);
         $this->em->flush();
+
+        mail(
+            config('app.service_email'),
+            'New post created',
+            $post->getName() . "\r\n" . $post->getText()
+        );
         
         return response(null, 200);
     }
@@ -168,6 +174,8 @@ class PostController extends Controller
 
         $this->em->remove($post);
         $this->em->flush();
+
+        Log::info('Post ' . $post->getId() .  'deleted');
 
         return response(null, 200);
     }
