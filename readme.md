@@ -204,5 +204,6 @@ Response:
 Doctrine database migrations are available:
 - `php artisan doctrine:migrations:migrate`
 - `php artisan doctrine:migrations:reset`
+- 
 Database seed:
 - `php artisan db:seed`

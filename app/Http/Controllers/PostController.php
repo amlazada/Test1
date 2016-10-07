@@ -10,6 +10,7 @@ class PostController extends Controller
 {
     private $em;
 
+    // Inject Doctrine Entity Manager
     public function __construct(\Doctrine\ORM\EntityManagerInterface $em)
     {
         $this->em = $em;
@@ -27,12 +28,14 @@ class PostController extends Controller
 
         $posts = $this->em->getRepository("Test1\Entities\Post")->findAll();
 
+        // If 'countByTag' query string is passed, execute the count posts operation
         if (!empty($countByTag)) {
             $filteredPosts = $this->findPostsByTags($posts, $countByTag);
 
             return response()->json([ 'count' => count($filteredPosts) ]);
         }
 
+        // If 'searchByTag' query string is passed, filter posts by tags
         if (!empty($searchByTag)) {
             $posts = $this->findPostsByTags($posts, $searchByTag);
         }
@@ -46,6 +49,7 @@ class PostController extends Controller
         return response()->json($result);
     }
 
+    // Given a set of tags, find posts, each one containing all of the tags
     private function findPostsByTags($posts, $tagsNames)
     {
         $result = array();
@@ -54,6 +58,8 @@ class PostController extends Controller
 
         $tags = array();
 
+        // Get all the tags by name from database, if a tag doesn't not exist,
+        // there is no post which contain this tag, it means, the result is empty
         foreach ($tagsNames as $tagName) {
             $tag = $this->em->getRepository("Test1\Entities\Tag")->findOneBy(array('name' => $tagName));
             if (empty($tag)) {
@@ -62,6 +68,7 @@ class PostController extends Controller
             $tags[] = $tag;
         }
 
+        // Filter posts discarding ones not containing all the tags
         foreach ($posts as $post) {
             $postTags = $post->getTags(); 
             $containsAllInputTags = true;
@@ -165,6 +172,8 @@ class PostController extends Controller
         return response(null, 200);
     }
 
+    // Given a list of tags names, get ones already existing in database and
+    // create ones which do not exist
     private function getTags($inputTags)
     {
         $tags = array();

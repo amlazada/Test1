@@ -61,6 +61,7 @@ class Post
         return $this->tags;
     }
 
+    // Get an array of tag names of tags belonging to this post
     private function getTagsNames()
     {
     	$tags = array();
@@ -70,6 +71,7 @@ class Post
         return $tags;
     }
 
+    // Get a readable representation of this post
     public function toArray()
     {
     	return [

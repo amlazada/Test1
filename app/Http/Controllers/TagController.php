@@ -12,6 +12,7 @@ class TagController extends Controller
 {
     private $em;
 
+    // Inject Doctrine Entity Manager
     public function __construct(\Doctrine\ORM\EntityManagerInterface $em)
     {
         $this->em = $em;
@@ -29,6 +30,7 @@ class TagController extends Controller
         $result = array();
 
         foreach ($tags as $tag) {
+            // Get a readable representation of a tag
             $result[] = array('id' => $tag->getId(), 'name' => $tag->getName());
         }
 
@@ -57,18 +59,21 @@ class TagController extends Controller
      */
     public function show($id)
     {
+        // Check Redis cache first
         $cachedTag = Redis::hgetAll('tag:'.$id);
 
         if (!empty($cachedTag)) {
             return response()->json([ 'id' => $id, 'name' => $cachedTag['name'] ]);
         }
 
+        // Cache miss, looking into database
         $tag = $this->em->find(\Test1\Entities\Tag::class, $id);
 
         if (empty($tag)) {
             return response(null, 404);
         }
 
+        // Update cache
         Redis::hset('tag:'.$id, 'name', $tag->getName());
 
         return response()->json([ 'id' => $tag->getId(), 'name' => $tag->getName() ]);
@@ -103,6 +108,7 @@ class TagController extends Controller
             return response("Tag cannot reference a non-existent post", 422);
         }
 
+        // If $id is empty, process as a POST (create) request
         if (empty($id)) {
             $tag = $this->em->getRepository("Test1\Entities\Tag")->findOneBy(array('name' => $name));
 
@@ -111,6 +117,7 @@ class TagController extends Controller
             } else {
                 return response('Tag ' . $name . ' already exists', 422);
             }
+        // $id is not empty, process as a PUT (update) request
         } else {
             $tag = $this->em->find(\Test1\Entities\Tag::class, $id);
 
@@ -119,8 +126,11 @@ class TagController extends Controller
             }
 
             $tag->setName($name);
+            // Update cache
+            Redis::hset('tag:'.$id, 'name', $name);
         }
 
+        // Update post
         foreach ($posts as $post) {
             $post->addTag($tag);
         }
@@ -150,9 +160,12 @@ class TagController extends Controller
         $this->em->remove($tag);
         $this->em->flush();
 
+        Redis::del('tag:'.$id);
+
         return response(null, 200);
     }
 
+    // Given a list of post ids, check if each one of them exist and return them
     private function getPosts($inputPostsIds)
     {
         $posts = array();
