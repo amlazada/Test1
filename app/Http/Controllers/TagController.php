@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 
 use Test1\Http\Requests;
 
+use Illuminate\Support\Facades\Redis;
+
 class TagController extends Controller
 {
     private $em;
@@ -27,7 +29,7 @@ class TagController extends Controller
         $result = array();
 
         foreach ($tags as $tag) {
-            $result[] = $tag->getName();
+            $result[] = array('id' => $tag->getId(), 'name' => $tag->getName());
         }
 
         return response()->json($result);
@@ -42,19 +44,9 @@ class TagController extends Controller
     public function store(Request $request)
     {
         $inputName = $request->input('name');
+        $inputPosts = $request->input('posts');
 
-        $tag = $this->em->getRepository("Test1\Entities\Tag")->findOneBy(array('name' => $inputName));
-
-        if (empty($tag)) {
-            $tag = new \Test1\Entities\Tag($inputName);
-        } else {
-            return response('already exists', 422);
-        }
-
-        $this->em->persist($tag);
-        $this->em->flush();
-
-        return response(null, 200);
+        return $this->save($inputName, $inputPosts);
     }
 
     /**
@@ -65,13 +57,21 @@ class TagController extends Controller
      */
     public function show($id)
     {
+        $cachedTag = Redis::hgetAll('tag:'.$id);
+
+        if (!empty($cachedTag)) {
+            return response()->json([ 'id' => $id, 'name' => $cachedTag['name'] ]);
+        }
+
         $tag = $this->em->find(\Test1\Entities\Tag::class, $id);
 
         if (empty($tag)) {
             return response(null, 404);
         }
 
-        return response()->json([ 'name' => $tag->getName() ]);
+        Redis::hset('tag:'.$id, 'name', $tag->getName());
+
+        return response()->json([ 'id' => $tag->getId(), 'name' => $tag->getName() ]);
     }
 
     /**
@@ -86,24 +86,51 @@ class TagController extends Controller
         $inputName = $request->input('name');
         $inputPosts = $request->input('posts');
 
-        $tag = $this->em->find(\Test1\Entities\Tag::class, $id);
+        return $this->save($inputName, $inputPosts, $id);
+    }
 
-        if (empty($tag)) {
-            return response(null, 404);
+    private function save($name, $postsIds, $id = null)
+    {
+        if (empty($name)) {
+            return response("Name of a tag should not be empty", 422);
         }
 
-        $tag->setName($inputName);
+        $posts = array();
+
         try {
-            $posts = $this->getPosts($inputPosts)
+            $posts = $this->getPosts(\Test1\Utils\ArrayUtils::Arrayify($postsIds));
         } catch (\Exception $e) {
-            return response($e, 422);
+            return response("Tag cannot reference a non-existent post", 422);
         }
-        $tag->setPosts();
+
+        if (empty($id)) {
+            $tag = $this->em->getRepository("Test1\Entities\Tag")->findOneBy(array('name' => $name));
+
+            if (empty($tag)) {
+                $tag = new \Test1\Entities\Tag($name);
+            } else {
+                return response('Tag ' . $name . ' already exists', 422);
+            }
+        } else {
+            $tag = $this->em->find(\Test1\Entities\Tag::class, $id);
+
+            if (empty($tag)) {
+                return response(null, 404);
+            }
+
+            $tag->setName($name);
+        }
+
+        foreach ($posts as $post) {
+            $post->addTag($tag);
+        }
+
+        $tag->setPosts($posts);
 
         $this->em->persist($tag);
         $this->em->flush();
 
-        return response(null, 200);
+        return response($tag->getId(), 200);
     }
 
     /**
@@ -133,7 +160,6 @@ class TagController extends Controller
             $post = $this->em->find(\Test1\Entities\Post::class, $inputPostId);
             if (empty($post)) {
                 throw new \Exception('Post with id: ' . $inputPostId . 'does not exist');
-                
             }
             $posts[] = $post;
         }

@@ -177,8 +177,12 @@ return [
         // Test1\Providers\BroadcastServiceProvider::class,
         Test1\Providers\EventServiceProvider::class,
         Test1\Providers\RouteServiceProvider::class,
+        Test1\Providers\UtilsServiceProvider::class,
 
         LaravelDoctrine\ORM\DoctrineServiceProvider::class,
+        LaravelDoctrine\Migrations\MigrationsServiceProvider::class,
+
+        Mpociot\ApiDoc\ApiDocGeneratorServiceProvider::class,
 
     ],
 

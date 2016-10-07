@@ -48,8 +48,8 @@ class Tag
         $this->name = $name;
     }
 
-    public function addPost($post)
+    public function setPosts($posts)
     {
-        $this->posts[] = $post;
+        $this->posts = $posts;
     }
 }

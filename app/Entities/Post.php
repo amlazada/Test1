@@ -73,6 +73,7 @@ class Post
     public function toArray()
     {
     	return [
+            'id' => $this->id,
             'name' => $this->name,
             'text' => $this->text,
             'tags' => $this->getTagsNames(),
@@ -96,5 +97,15 @@ class Post
     		$tag->addPost($this);
         	$this->tags[] = $tag;
     	}
+    }
+
+    public function addTag($newTag)
+    {
+        foreach ($this->tags as $tag) {
+            if ($tag->getName() == $newTag->getName()) {
+                return;
+            }
+        }
+        $this->tags[] = $newTag;
     }
 }

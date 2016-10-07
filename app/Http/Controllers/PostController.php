@@ -50,9 +50,7 @@ class PostController extends Controller
     {
         $result = array();
 
-        if (!is_array($tagsNames)) {
-            $tagsNames = array($tagsNames);
-        }
+        $tagsNames = \Test1\Utils\ArrayUtils::Arrayify($tagsNames);
 
         $tags = array();
 
