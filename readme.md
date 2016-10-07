@@ -205,6 +205,60 @@ Response:
 Doctrine database migrations are available:
 - `php artisan doctrine:migrations:migrate`
 - `php artisan doctrine:migrations:reset`
-- 
+
 Database seed:
 - `php artisan db:seed`
+
+### Issues
+###### Coding style
+I'm not familiar with PHP common coding styles, so, in general, coding style of this project is lacking consistency I usually striving for.
+
+###### Generated API documentation
+Automatically generate API documentation is always important, I've tried to use Swagger, but integrating it with laravel seemed to be taking too long. I've tried [laravel-apidoc-generator](https://github.com/mpociot/laravel-apidoc-generator), the result can be found at [/public/docs/index.html](/public/docs/index.html).
+
+###### Testing
+Due to time limitation, only test for the `/tag` resource is available at this moment: [/tests/TagTest.php](/tests/TagTest.php). I'm familiar with unit-testing and a big believer of it, but not being familiar with PHPUnit I'd like to have some improvements like better tests splitting, cleaner style.
+
+###### Error handling
+Both approaches of not handling error or covering everything with `try/catch` are naive and not suitable for real-world production environment. Usually, project requirements are what define an error handling model for a project. For example, take a look at [this line](https://github.com/amlazada/Test1/blob/master/app/Http/Controllers/TagController.php#L28):
+
+```php
+$tags = $this->em->getRepository("Test1\Entities\Tag")->findAll();
+```
+
+This operation may cause an exception, and a one way to handle it is:
+
+```php
+try {
+  $tags = $this->em->getRepository("Test1\Entities\Tag")->findAll();
+} catch (\Exception $e) {
+  response($e, 500)
+}
+```
+
+But there are few issues about that:
+- Without any business requirements, there is nothing much to do in the catch block, basically, there is no meaningful difference between letting an exception go and handling it in this way
+- Handling this type of errors is more of a cross-cutting concern, so handling an error like that 'in place' is not efficient for a real-world project
+
+So, due to time limitations, I decided to leave it this way for now.
+
+###### Dependency injection
+Take a look, for example, at [this line](https://github.com/amlazada/Test1/blob/master/app/Http/Controllers/TagController.php#L63):
+
+```php
+$cachedTag = Redis::hgetAll('tag:'.$id);
+```
+
+With little to no exception using statics (singletons, etc.) is bad. I'd prefer to have the Redis service injected the same way I [inject Doctrine Entity Manager](https://github.com/amlazada/Test1/blob/master/app/Http/Controllers/TagController.php#L16):
+
+```php
+public function __construct(\Doctrine\ORM\EntityManagerInterface $em)
+{
+    $this->em = $em;
+}
+```
+
+Again, having a limited time, I left it this way for now.
+
+###### Database/cache synchronization policies
+There are many ways to organize database/cache access and picking one is a big task itself. I went a simple way, but for a more serious application I'd like to spend more time designing/implementing it.
